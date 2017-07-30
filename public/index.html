@@ -1,7 +1,7 @@
 <!doctype html>
 <html ng-app="url-shortener">
   <head>
-    <title>URL shortener</title>
+    <title>Go URL shortener</title>
     <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.5/angular.min.js"></script>
     <script>
     var app = angular.module('url-shortener', []);
@@ -24,10 +24,25 @@
       }
     });
   </script>
+    <style type="text/css">
+    .container {
+	width: 700px;
+	clear: both;
+    }
+    .container input {
+	width: 100%;
+	clear: both;
+    }
+    </style>
   </head>
   <body ng-controller="createCtrl">
-    URL <input ng-model="url">
-     <button type="button" class="btn btn-primary btn-lg btn-block" ng-click="save(url)">Make URL shorter</button>
+  <h1>Go URL Shortener</h1>
+  <h3>Less clicks, fewer keystrokes, more fun!</h3>
+  <div class="container">
+    <label>URL:</label><input ng-model="url"></br>
+    <label>Shortened:</label><input ng-model="shortened">
+    <button type="button" class="btn btn-primary btn-lg btn-block" ng-click="save(url)">Go Shorten!</button>
+  </div>
   </body>
   <br/>
   {{short_url}}
