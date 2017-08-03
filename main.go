@@ -37,8 +37,8 @@ func decode(s string) int {
 }
 
 func decodeHandler(response http.ResponseWriter, request *http.Request, db Database) {
-	id := decode(mux.Vars(request)["id"])
-	url, err := db.Get(id)
+	shortened := mux.Vars(request)["shortened"]
+	url, err := db.Get(shortened)
 	if err != nil {
 		http.Error(response, `{"error": "No such URL"}`, http.StatusNotFound)
 		return
@@ -49,7 +49,9 @@ func decodeHandler(response http.ResponseWriter, request *http.Request, db Datab
 func encodeHandler(response http.ResponseWriter, request *http.Request, db Database, baseURL string) {
 	decoder := json.NewDecoder(request.Body)
 	var data struct {
+    shortened string
 		URL string `json:"url"`
+		user_id int
 	}
 	err := decoder.Decode(&data)
 	if err != nil {
@@ -58,17 +60,17 @@ func encodeHandler(response http.ResponseWriter, request *http.Request, db Datab
 	}
 
 	if !govalidator.IsURL(data.URL) {
-		http.Error(response, `{"error": "Not a valid URL"}`, http.StatusBadRequest)
+		http.Error(response, `{"error": "Not a valshortened URL"}`, http.StatusBadRequest)
 		return
 	}
 
-	id, err := db.Save(data.URL)
+	shortened, err := db.Save(data.shortened, data.URL, data.user_id)
 	if err != nil {
 		log.Println(err)
 		return
 	}
 
-	resp := map[string]string{"url": baseURL + encode(id), "id": encode(id), "error": ""}
+	resp := map[string]string{"url": baseURL + shortened, "shortened": shortened, "error": ""}
 	jsonData, _ := json.Marshal(resp)
 	response.Write(jsonData)
 
@@ -95,7 +97,7 @@ func main() {
 		func(response http.ResponseWriter, request *http.Request) {
 			encodeHandler(response, request, db, baseURL)
 		}).Methods("POST")
-	r.HandleFunc("/{id}", func(response http.ResponseWriter, request *http.Request) {
+	r.HandleFunc("/{shortened}", func(response http.ResponseWriter, request *http.Request) {
 		decodeHandler(response, request, db)
 	})
 	r.PathPrefix("/").Handler(http.FileServer(http.Dir("public")))

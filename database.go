@@ -8,48 +8,45 @@ import (
 
 // Database interface
 type Database interface {
-	Get(id int) (string, error)
-	Save(url string) (int64, error)
+	Get(shortened string) (string, error)
+	Save(shortened string, url string, user_id int) (string, error)
 }
 
 type sqlite struct {
 	Path string
 }
 
-func (s sqlite) Save(url string) (int64, error) {
+func (s sqlite) Save(shortened string, url string, user_id int) (string, error) {
 	db, err := sql.Open("sqlite3", s.Path)
 	tx, err := db.Begin()
 	if err != nil {
-		return 0, err
+		return "", err
 	}
-	stmt, err := tx.Prepare("insert into urls(url) values(?)")
+	stmt, err := tx.Prepare("insert into urls(shortened, url, user_id) values(?, ?, ?)")
 	if err != nil {
-		return 0, err
+		return "", err
 	}
 	defer stmt.Close()
-	result, err := stmt.Exec(url)
+	result, err := stmt.Exec(shortened, url, user_id)
 	if err != nil {
-		return 0, err
+		return "", err
 	}
+	_ = result
 
-	id, err := result.LastInsertId()
-	if err != nil {
-		return 0, nil
-	}
 	tx.Commit()
-	//result
-	return id, nil
+
+	return shortened, nil
 }
 
-func (s sqlite) Get(id int) (string, error) {
+func (s sqlite) Get(shortened string) (string, error) {
 	db, err := sql.Open("sqlite3", s.Path)
-	stmt, err := db.Prepare("select url from urls where id = ?")
+	stmt, err := db.Prepare("select url from urls where shortened = ?")
 	if err != nil {
 		return "", err
 	}
 	defer stmt.Close()
 	var url string
-	err = stmt.QueryRow(id).Scan(&url)
+	err = stmt.QueryRow(shortened).Scan(&url)
 	if err != nil {
 		return "", err
 	}
@@ -63,7 +60,7 @@ func (s sqlite) Init() {
 	}
 	defer c.Close()
 
-	sqlStmt := `create table if not exists urls (id integer not null primary key, url text);`
+	sqlStmt := `create table if not exists urls (shortened text not null primary key, url text not null, user_id integer, created_at timestamp DEFAULT CURRENT_TIMESTAMP NOT NULL);`
 	_, err = c.Exec(sqlStmt)
 	if err != nil {
 		log.Fatal(err)
